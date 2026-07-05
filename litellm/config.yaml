@@ -1,0 +1,40 @@
+# LiteLLM gateway config — Claude models via GitHub Copilot.
+# Safe to commit: contains NO secrets. The master key is injected at runtime from
+# the LITELLM_MASTER_KEY env var (install.sh generates a random one per machine),
+# and the GitHub Copilot login is per-user (device flow, stored outside this repo
+# at ~/.config/litellm/github_copilot/).
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  # CRITICAL: the github_copilot provider otherwise rewrites Anthropic `system`
+  # messages into an `assistant` turn, which makes Claude Code's system prompt
+  # (CLAUDE.md rules, tool instructions) only weakly followed. Keep system as system.
+  disable_copilot_system_to_assistant: true
+
+model_list:
+  # ---- Opus 4.8 (default driver) ----
+  - model_name: claude-opus-4-8
+    litellm_params:
+      model: github_copilot/claude-opus-4.8
+      extra_headers: { Editor-Version: vscode/1.100.0 }
+    model_info: { max_input_tokens: 1000000, max_output_tokens: 32000 }
+  - model_name: claude-opus-4-8[1m]
+    litellm_params:
+      model: github_copilot/claude-opus-4.8
+      extra_headers: { Editor-Version: vscode/1.100.0 }
+    model_info: { max_input_tokens: 1000000, max_output_tokens: 32000 }
+  - model_name: claude-opus-4.8
+    litellm_params:
+      model: github_copilot/claude-opus-4.8
+      extra_headers: { Editor-Version: vscode/1.100.0 }
+    model_info: { max_input_tokens: 1000000, max_output_tokens: 32000 }
+  # ---- Sonnet 5 (fallback) ----
+  - model_name: claude-sonnet-5
+    litellm_params:
+      model: github_copilot/claude-sonnet-5
+      extra_headers: { Editor-Version: vscode/1.100.0 }
+    model_info: { max_input_tokens: 1000000, max_output_tokens: 64000 }

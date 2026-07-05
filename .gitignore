@@ -1,0 +1,10 @@
+# never commit secrets or local state
+.env
+**/.master_key
+**/github_copilot/
+**/access-token
+**/api-key.json
+*.bak.*
+.DS_Store
+__pycache__/
+claude-artifacts/
