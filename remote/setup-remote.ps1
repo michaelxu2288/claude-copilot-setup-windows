@@ -20,6 +20,7 @@ powercfg /change standby-timeout-ac 0
 powercfg /change hibernate-timeout-ac 0
 
 Write-Host "== helpers -> PowerShell profile ==" -ForegroundColor Blue
+Copy-Item (Join-Path $PSScriptRoot 'claude-remote.ps1') "$HOME\.claude-remote.ps1" -Force
 $prof = $PROFILE.CurrentUserAllHosts
 if (-not (Test-Path $prof)) { New-Item -ItemType File -Force -Path $prof | Out-Null }
 if (-not (Select-String -Path $prof -Pattern 'claude-remote.ps1' -Quiet -ErrorAction SilentlyContinue)) {

@@ -17,6 +17,12 @@ function Log($m){ Write-Host "==> $m" -ForegroundColor Blue }
 function Ok($m){  Write-Host "  ok $m" -ForegroundColor Green }
 function Warn($m){ Write-Host "  ! $m" -ForegroundColor Yellow }
 function Die($m){ Write-Host "ERROR: $m" -ForegroundColor Red; exit 1 }
+# winget/npm update the PERSISTENT PATH, not the running process — refresh it after installs
+function Refresh-Path {
+  $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' +
+              [Environment]::GetEnvironmentVariable('Path','User') +
+              ";$env:USERPROFILE\.local\bin;$env:APPDATA\npm"
+}
 
 $Repo   = $PSScriptRoot
 $LL     = Join-Path $env:USERPROFILE ".config\litellm"
@@ -28,7 +34,7 @@ $KeyFile= Join-Path $LL ".master_key"
 if (Test-Path "$Repo\.env") {
   Get-Content "$Repo\.env" | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
     $k,$v = $_ -split '=',2
-    Set-Item "Env:$($k.Trim())" $v.Trim()
+    Set-Item "Env:$($k.Trim())" ($v.Trim().Trim('"').Trim("'"))
   }
   Ok "loaded .env"
 }
@@ -43,12 +49,12 @@ if ($Python) { $Runtime = "python" }
 # --- 1. deps ---
 Log "Checking dependencies"
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { Die "winget not found — install 'App Installer' from the Microsoft Store, then re-run" }
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) { winget install --id Python.Python.3.12 -e --accept-package-agreements --accept-source-agreements | Out-Null }
-python -c "import sys" 2>$null; if ($LASTEXITCODE -ne 0) { Die "python not runnable on PATH — open a new PowerShell after install and re-run" }
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) { winget install --id Python.Python.3.12 -e --accept-package-agreements --accept-source-agreements | Out-Null; Refresh-Path }
+python -c "import sys" 2>$null; if ($LASTEXITCODE -ne 0) { Die "python not runnable on PATH — CLOSE this PowerShell, open a NEW one, cd back to the repo, and re-run (winget PATH changes need a fresh shell). If 'python' opens the Microsoft Store, disable the App-execution alias in Settings." }
 python -m pip install --user -q pipx 2>$null | Out-Null
 python -m pipx ensurepath 2>$null | Out-Null
-$env:PATH = "$env:USERPROFILE\.local\bin;$env:PATH"
-if (-not (Get-Command litellm -ErrorAction SilentlyContinue)) { Log "Installing LiteLLM"; python -m pipx install "litellm[proxy]" 2>$null | Out-Null }
+Refresh-Path
+if (-not (Get-Command litellm -ErrorAction SilentlyContinue)) { Log "Installing LiteLLM"; python -m pipx install "litellm[proxy]" 2>$null | Out-Null; Refresh-Path }
 Ok "base deps present"
 
 # --- 2. gateway config ---
@@ -101,8 +107,8 @@ if (-not $Seeded -and -not (Test-Path "$GC\access-token")) {
 # --- 7. Claude Code + settings ---
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   Log "Installing Claude Code"
-  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements | Out-Null }
-  npm install -g @anthropic-ai/claude-code 2>$null | Out-Null
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements | Out-Null; Refresh-Path }
+  try { npm install -g @anthropic-ai/claude-code | Out-Null; Refresh-Path } catch { Warn "Claude Code install failed — install it from https://code.claude.com/docs, then re-run" }
 }
 Log "Installing statusline + settings"
 New-Item -ItemType Directory -Force -Path $Claude | Out-Null
@@ -113,8 +119,8 @@ Ok "settings written"
 
 # --- 8. /artifact skill ---
 Log "Installing /artifact skill"
-New-Item -ItemType Directory -Force -Path "$Claude\skills" | Out-Null
-Copy-Item "$Repo\skills\artifact" "$Claude\skills\artifact" -Recurse -Force
+New-Item -ItemType Directory -Force -Path "$Claude\skills\artifact" | Out-Null
+Copy-Item "$Repo\skills\artifact\*" "$Claude\skills\artifact\" -Recurse -Force
 Ok "skill installed"
 
 # --- 9. persistence: logon Scheduled Task ---

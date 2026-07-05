@@ -25,5 +25,11 @@ if not env_only:
     for k, v in tmpl.items():                         # top-level: model, statusLine, effort, theme, ...
         if k != "env": cur[k] = v
 
+# powershell -File does NOT resolve ~ on Windows; expand it to an absolute forward-slash
+# path (works on Windows AND macOS/linux) so the status line actually loads.
+sl = cur.get("statusLine")
+if isinstance(sl, dict) and isinstance(sl.get("command"), str) and "~" in sl["command"]:
+    sl["command"] = sl["command"].replace("~", os.path.expanduser("~").replace("\\", "/"), 1)
+
 json.dump(cur, open(dst_path, "w", encoding="utf-8"), indent=2)
 print("wrote", dst_path)

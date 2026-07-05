@@ -28,7 +28,7 @@ function Start-Python {
   if (-not $litellm) { $litellm = "$env:USERPROFILE\.local\bin\litellm.exe" }
   Start-Process -FilePath $litellm `
     -ArgumentList @("--config", "$LL\config.yaml", "--host", "127.0.0.1", "--port", "4000") `
-    -WindowStyle Hidden `
+    -NoNewWindow `
     -RedirectStandardOutput "$LL\proxy.log" -RedirectStandardError "$LL\proxy.err.log"
 }
 function Start-Docker {

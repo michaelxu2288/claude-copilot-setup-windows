@@ -12,6 +12,7 @@ Unregister-ScheduledTask -TaskName "litellm-gateway" -Confirm:$false -ErrorActio
 Write-Host "==> stopping the gateway (docker + python)"
 docker rm -f litellm 2>$null | Out-Null
 Get-CimInstance Win32_Process -Filter "Name='litellm.exe'" 2>$null | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Get-CimInstance Win32_Process -Filter "Name like '%python%'" 2>$null | Where-Object { $_.CommandLine -like "*litellm*--config*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
 $bak = Get-ChildItem "$Claude\settings.json.bak.*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($bak) { Copy-Item $bak.FullName "$Claude\settings.json" -Force; Write-Host "  restored settings.json from $($bak.Name)" }

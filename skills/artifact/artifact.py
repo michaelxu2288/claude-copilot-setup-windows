@@ -89,6 +89,11 @@ def server_running():
         return False
     try:
         pid = int(open(PIDFILE).read().strip())
+        if os.name == "nt":
+            # os.kill(pid, 0) TERMINATES the process on Windows — use tasklist instead
+            out = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid, "/NH"],
+                                 capture_output=True, text=True)
+            return str(pid) in out.stdout
         os.kill(pid, 0)
         return True
     except Exception:
