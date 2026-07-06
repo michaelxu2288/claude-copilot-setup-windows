@@ -22,6 +22,13 @@ powercfg /change hibernate-timeout-ac 0
 
 Write-Host "== helpers -> PowerShell profile ==" -ForegroundColor Blue
 Copy-Item (Join-Path $PSScriptRoot 'claude-remote.ps1') "$HOME\.claude-remote.ps1" -Force
+# install the zellij 'claude' layout (used by ccnew) if zellij is present
+if (Get-Command zellij -ErrorAction SilentlyContinue) {
+  $zl = Join-Path $env:APPDATA 'zellij\layouts'
+  New-Item -ItemType Directory -Force $zl | Out-Null
+  Copy-Item (Join-Path $PSScriptRoot 'claude.kdl') (Join-Path $zl 'claude.kdl') -Force
+  Write-Host "  installed zellij 'claude' layout -> $zl\claude.kdl"
+}
 $prof = $PROFILE.CurrentUserAllHosts
 if (-not (Test-Path $prof)) { New-Item -ItemType File -Force -Path $prof | Out-Null }
 if (-not (Select-String -Path $prof -Pattern 'claude-remote.ps1' -Quiet -ErrorAction SilentlyContinue)) {

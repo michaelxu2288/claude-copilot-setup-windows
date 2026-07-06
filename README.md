@@ -169,13 +169,26 @@ Copy-Item skills\artifact\* "$env:USERPROFILE\.claude\skills\artifact\" -Recurse
 `artifact.py` is OS-aware (Tailscale/LAN detection + browser-open work on Windows; the server
 liveness check uses `tasklist`, not the Windows-fatal `os.kill`).
 
-## D. Remote / phone access (OpenSSH + Tailscale) — optional
+## D. Remote / phone access (OpenSSH + Tailscale) — phone → Windows, same as phone → Mac
+Run **in an ELEVATED PowerShell** (installs OpenSSH server, joins Tailscale, sets always-on
+power, and installs the `llm`/`ccnew`/`wake` helpers + the zellij `claude` layout):
 ```powershell
-powershell -ExecutionPolicy Bypass -File remote\setup-remote.ps1   # ELEVATED: enables sshd + Tailscale + always-on power, and installs the helpers
+powershell -ExecutionPolicy Bypass -File remote\setup-remote.ps1
 ```
-Helpers (auto-dot-sourced from your profile): `llm` (restart gateway), `ccnew <name>` (new agent
-window — Windows has no tmux, so separate windows not panes), `wake` (keep awake). From the phone:
-SSH into PowerShell over Tailscale and read code via the `/artifact` URLs.
+When the Tailscale browser opens, **sign in with the SAME account as your Mac/phone**
+(`michaelxu2288@gmail.com`) so this PC joins the same tailnet and gets its own stable `100.x`.
+The script prints your Windows tailnet IP + the exact Termius config.
+
+**In iPhone Termius — add ONE new host (plain SSH, no mosh):**
+- **Address:** the Windows `100.x` it printed (or `<pcname>.tail18b6fd.ts.net`)
+- **Port:** `22` · **Username:** your Windows username · **Password:** your Windows sign-in (or an SSH key)
+- Connect → run `claude`. Same as phone → Mac. You keep both Termius hosts (Mac + Windows).
+
+**Persistent, attachable agent sessions with Zellij** (Windows has no tmux, but **Zellij runs
+natively** in PowerShell): `ccnew a1` starts a zellij session running claude; from the phone
+`zellij attach a1` reattaches, `Ctrl-o d` detaches, `zellij ls` lists. Full tmux→Zellij mapping:
+**[ZELLIJ.md](./ZELLIJ.md)**. Read diffs/code via the `/artifact` URLs (auto-binds the Windows
+`100.x` once Tailscale is up).
 
 ## E. Docs-wiki harness (per-project LLM knowledge base) — optional
 Opt-in per project (switch = a `docs-wiki/` folder). Two agents + a nudge hook + three commands.

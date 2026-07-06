@@ -1,0 +1,7 @@
+// zellij layout: one pane running Claude Code. Used by `ccnew` (zellij --session <name> --layout claude).
+// install to your zellij layouts dir (Windows: %APPDATA%\zellij\layouts\claude.kdl).
+layout {
+    pane command="claude" {
+        args "--dangerously-skip-permissions"
+    }
+}
