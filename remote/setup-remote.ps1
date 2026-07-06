@@ -8,12 +8,13 @@ Set-Service sshd -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service sshd -ErrorAction SilentlyContinue
 New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 -ErrorAction SilentlyContinue | Out-Null
 
-Write-Host "== Tailscale ==" -ForegroundColor Blue
+Write-Host "== Tailscale (join the SAME tailnet as your Mac/phone) ==" -ForegroundColor Blue
+Write-Host "  When the browser opens, sign in with: michaelxu2288@gmail.com" -ForegroundColor Yellow
 if (-not (Get-Command tailscale -ErrorAction SilentlyContinue)) {
   winget install --id tailscale.tailscale -e --accept-package-agreements --accept-source-agreements | Out-Null
 }
 $ts = "$env:ProgramFiles\Tailscale\tailscale.exe"
-if (Test-Path $ts) { & $ts up --ssh }
+if (Test-Path $ts) { & $ts up }   # plain up (SSH is via the OpenSSH server above); log into the same account
 
 Write-Host "== always-on power (plugged in) ==" -ForegroundColor Blue
 powercfg /change standby-timeout-ac 0
@@ -26,5 +27,14 @@ if (-not (Test-Path $prof)) { New-Item -ItemType File -Force -Path $prof | Out-N
 if (-not (Select-String -Path $prof -Pattern 'claude-remote.ps1' -Quiet -ErrorAction SilentlyContinue)) {
   Add-Content $prof ". `"$HOME\.claude-remote.ps1`""
 }
-if (Test-Path $ts) { Write-Host "tailnet IP: $(& $ts ip -4)" }
-Write-Host "note: Windows has no tmux — drive agents in separate PowerShell windows (ccnew), and read code via the /artifact URLs."
+if (Test-Path $ts) {
+  $ip = (& $ts ip -4 2>$null | Select-Object -First 1)
+  Write-Host ""
+  Write-Host "==> DONE. Add ONE new host in iPhone Termius (plain SSH, NO mosh):" -ForegroundColor Green
+  Write-Host "      Address : $ip     (stable; or use  $($env:COMPUTERNAME.ToLower()).tail18b6fd.ts.net )"
+  Write-Host "      Port    : 22"
+  Write-Host "      Username: $env:USERNAME"
+  Write-Host "      Password: your Windows sign-in password  (or add an SSH key)"
+  Write-Host "    Then in that Termius session run:  claude"
+  Write-Host "    (Windows has no tmux — use separate Termius tabs / 'ccnew' windows; read code via the /artifact URLs.)"
+}
